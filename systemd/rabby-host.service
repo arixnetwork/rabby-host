@@ -15,6 +15,9 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
 ReadWritePaths=/var/lib/rabby-host /var/log/rabby-host /var/www/rabby-host
 
 [Install]
