@@ -24,6 +24,7 @@ export default function Page() {
   const [active, setActive] = useState('Dashboard')
   const [showWizard, setShowWizard] = useState(false)
   const [dark, setDark] = useState(true)
+  const [appearance, setAppearance] = useState<'simple' | 'designed'>('designed')
   const [refreshing, setRefreshing] = useState(false)
   const [notice, setNotice] = useState('')
   const visibleSites = useMemo(() => sites, [])
@@ -31,12 +32,19 @@ export default function Page() {
   const notify = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(''), 2800) }
 
   return (
-    <main className={dark ? 'min-h-screen bg-[#101318] text-[#eef1f5]' : 'min-h-screen bg-[#f5f7fa] text-[#15202b]'}>
+    <main className={`${dark ? 'min-h-screen bg-[#101318] text-[#eef1f5]' : 'min-h-screen bg-[#f5f7fa] text-[#15202b]'} ${appearance === 'simple' ? 'appearance-simple' : 'appearance-designed'}`}>
       <div className="flex min-h-screen">
         <aside className={`${mobileOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-[#28303b] bg-[#15191f] p-5 transition-transform md:static md:translate-x-0`}>
           <div className="flex items-center justify-between pb-8">
             <div className="flex items-center gap-3"><div className="flex size-9 items-center justify-center rounded-xl bg-[#d8ff62] text-[#101318]"><Zap className="size-5 fill-current" /></div><div><div className="font-semibold tracking-tight">Rabby Host</div><div className="text-xs text-[#8f9aaa]">Personal server control</div></div></div>
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu"><X /></Button>
+          </div>
+          <div className="mb-5 rounded-2xl border border-[#33404b] bg-[#1c232b] p-3">
+            <div className="mb-2 flex items-center justify-between"><span className="text-xs font-medium text-[#8f9aaa]">Appearance</span><span className="text-[10px] uppercase tracking-wider text-[#687383]">Live</span></div>
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#12161b] p-1" role="group" aria-label="Choose appearance">
+              <button type="button" onClick={() => setAppearance('simple')} className={`min-h-10 rounded-lg px-2 text-xs transition-colors ${appearance === 'simple' ? 'bg-[#d8ff62] font-semibold text-[#101318]' : 'text-[#aab3bf] hover:bg-[#20262e]'}`}>Simple</button>
+              <button type="button" onClick={() => setAppearance('designed')} className={`min-h-10 rounded-lg px-2 text-xs transition-colors ${appearance === 'designed' ? 'bg-[#d8ff62] font-semibold text-[#101318]' : 'text-[#aab3bf] hover:bg-[#20262e]'}`}>Rabby Host</button>
+            </div>
           </div>
           <nav className="flex flex-1 flex-col gap-1" aria-label="Primary navigation">
             <div className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#687383]">Workspace</div>
@@ -48,7 +56,7 @@ export default function Page() {
         </aside>
         {mobileOpen && <button aria-label="Close navigation" className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setMobileOpen(false)} />}
         <section className="min-w-0 flex-1">
-          <header className="flex h-20 items-center justify-between border-b border-[#252c35] px-5 md:px-10"><div className="flex items-center gap-3"><Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open menu"><Menu /></Button><div><p className="text-sm text-[#8f9aaa]">Monday, September 12, 2026</p><h1 className="text-xl font-semibold tracking-tight">{active}</h1></div></div><div className="flex items-center gap-2"><Button variant="outline" size="icon" className="border-[#303944] bg-transparent" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Zap /> : <CircleHelp />}</Button><Button variant="outline" size="icon" className="border-[#303944] bg-transparent" onClick={() => notify('Health check completed')} aria-label="Run health check"><Activity /></Button><div className="ml-2 flex size-9 items-center justify-center rounded-full bg-[#c3d0dd] text-sm font-semibold text-[#1a232c]">AD</div></div></header>
+          <header className="flex h-20 items-center justify-between border-b border-[#252c35] px-5 md:px-10"><div className="flex items-center gap-3"><Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open menu"><Menu /></Button><div><p className="text-sm text-[#8f9aaa]">Monday, September 12, 2026</p><h1 className="text-xl font-semibold tracking-tight">{active}</h1></div></div><div className="flex items-center gap-2"><Button variant="outline" className="hidden border-[#303944] bg-transparent px-3 text-xs sm:inline-flex" onClick={() => setAppearance(appearance === 'simple' ? 'designed' : 'simple')} aria-label="Toggle appearance">{appearance === 'simple' ? 'Simple' : 'Rabby Host'}</Button><Button variant="outline" size="icon" className="border-[#303944] bg-transparent" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Zap /> : <CircleHelp />}</Button><Button variant="outline" size="icon" className="border-[#303944] bg-transparent" onClick={() => notify('Health check completed')} aria-label="Run health check"><Activity /></Button><div className="ml-2 flex size-9 items-center justify-center rounded-full bg-[#c3d0dd] text-sm font-semibold text-[#1a232c]">AD</div></div></header>
           <div className="mx-auto max-w-[1500px] p-5 md:p-10">
             <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="mb-1 text-sm text-[#8f9aaa]">Good morning, Alex</p><h2 className="text-3xl font-semibold tracking-tight md:text-4xl">Your server at a glance</h2></div><div className="flex gap-2"><Button variant="outline" className="border-[#303944] bg-transparent" onClick={() => { setRefreshing(true); window.setTimeout(() => setRefreshing(false), 700) }}><RefreshCw className={refreshing ? 'animate-spin' : ''} data-icon="inline-start" />Refresh</Button><Button className="bg-[#d8ff62] text-[#101318] hover:bg-[#c6ef50]" onClick={() => setShowWizard(true)}><Plus data-icon="inline-start" />New website</Button></div></div>
             {notice && <div role="status" className="mb-5 rounded-xl border border-[#536d36] bg-[#21301e] px-4 py-3 text-sm text-[#d8ff62]">{notice}</div>}

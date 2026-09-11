@@ -153,6 +153,19 @@
   }
 }
 
+.appearance-simple aside {
+  width: 15rem;
+}
+
+.appearance-simple section.rounded-2xl,
+.appearance-simple .rounded-2xl {
+  border-radius: 0.75rem;
+}
+
+.appearance-simple h2 {
+  letter-spacing: -0.02em;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
