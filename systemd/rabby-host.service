@@ -1,0 +1,21 @@
+[Unit]
+Description=Rabby Host control panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rabby-host
+Group=rabby-host
+WorkingDirectory=/opt/rabby-host
+ExecStart=/opt/rabby-host/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8787
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/rabby-host /var/log/rabby-host /var/www/rabby-host
+
+[Install]
+WantedBy=multi-user.target

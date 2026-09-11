@@ -1,47 +1,72 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import { Activity, ArrowUpRight, ChevronDown, CircleHelp, Database, FileText, Globe2, HardDrive, LayoutDashboard, LifeBuoy, Menu, MoreHorizontal, Network, Play, Plus, RefreshCw, Server, Settings, ShieldCheck, Terminal, UploadCloud, Users, X, Zap } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+
+type Site = { name: string; domain: string; type: string; status: 'Running' | 'Stopped'; port: string; ssl: boolean; runtime: string; updated: string }
+
+const sites: Site[] = [
+  { name: 'northstar-blog', domain: 'northstar.dev', type: 'WordPress', status: 'Running', port: '80 / 443', ssl: true, runtime: 'PHP 8.3', updated: '2 min ago' },
+  { name: 'landing-page', domain: 'hello.rabby.host', type: 'Static', status: 'Running', port: '80', ssl: true, runtime: 'Nginx', updated: '18 min ago' },
+  { name: 'status-api', domain: 'api.rabby.host', type: 'Node.js', status: 'Running', port: '3001', ssl: false, runtime: 'Node 22 LTS', updated: '1 hr ago' },
+  { name: 'docs', domain: 'docs.rabby.host', type: 'PHP', status: 'Stopped', port: '80', ssl: true, runtime: 'PHP 8.2', updated: 'Yesterday' },
+]
+
+const nav = [
+  { label: 'Dashboard', icon: LayoutDashboard }, { label: 'Websites', icon: Globe2, count: '4' }, { label: 'Databases', icon: Database, count: '3' }, { label: 'File Manager', icon: FolderIcon }, { label: 'Backups', icon: HardDrive }, { label: 'Services', icon: Server }, { label: 'Logs', icon: FileText },
+]
+
+function FolderIcon(props: React.ComponentProps<typeof FileText>) { return <FileText {...props} /> }
+
 export default function Page() {
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [active, setActive] = useState('Dashboard')
+  const [showWizard, setShowWizard] = useState(false)
+  const [dark, setDark] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [notice, setNotice] = useState('')
+  const visibleSites = useMemo(() => sites, [])
+
+  const notify = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(''), 2800) }
+
   return (
-    <main
-      style={{
-        colorScheme: 'light dark',
-        position: 'relative',
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'light-dark(#fff, #000)',
-        color: 'light-dark(#000, #fff)',
-      }}
-    >
-      <svg
-        aria-hidden="true"
-        style={{ width: 80, height: 80 }}
-        width={80}
-        height={80}
-        fill="none"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-        stroke="currentColor"
-        strokeWidth="0.5"
-      >
-        <path
-          d="M14.2 14.2H17V6.9375C17 4.76288 15.2371 3 13.0625 3H5.8V5.8M14.2 14.2V7.79063L7.79062 14.2H14.2ZM14.2 14.2V17H6.9375C4.76288 17 3 15.2371 3 13.0625V5.8H5.8M5.8 5.8V12.2313L12.2313 5.8H5.8Z"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <p
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: 'calc(50% + 56px)',
-          transform: 'translateX(-50%)',
-          whiteSpace: 'nowrap',
-          fontSize: '14px',
-          fontWeight: 500,
-          color: 'light-dark(#71717a, #a1a1aa)',
-        }}
-      >
-        Your v0 generation will show here.
-      </p>
+    <main className={dark ? 'min-h-screen bg-[#101318] text-[#eef1f5]' : 'min-h-screen bg-[#f5f7fa] text-[#15202b]'}>
+      <div className="flex min-h-screen">
+        <aside className={`${mobileOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-[#28303b] bg-[#15191f] p-5 transition-transform md:static md:translate-x-0`}>
+          <div className="flex items-center justify-between pb-8">
+            <div className="flex items-center gap-3"><div className="flex size-9 items-center justify-center rounded-xl bg-[#d8ff62] text-[#101318]"><Zap className="size-5 fill-current" /></div><div><div className="font-semibold tracking-tight">Rabby Host</div><div className="text-xs text-[#8f9aaa]">Personal server control</div></div></div>
+            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu"><X /></Button>
+          </div>
+          <nav className="flex flex-1 flex-col gap-1" aria-label="Primary navigation">
+            <div className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#687383]">Workspace</div>
+            {nav.map(({ label, icon: Icon, count }) => <button key={label} onClick={() => { setActive(label); setMobileOpen(false) }} className={`flex min-h-11 items-center justify-between rounded-xl px-3 text-sm transition-colors ${active === label ? 'bg-[#25313a] text-[#d8ff62]' : 'text-[#aab3bf] hover:bg-[#20262e] hover:text-white'}`}><span className="flex items-center gap-3"><Icon className="size-4" />{label}</span>{count && <span className="rounded-md bg-[#2b3540] px-2 py-0.5 text-xs text-[#b8c1cb]">{count}</span>}</button>)}
+            <div className="mb-3 mt-7 px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#687383]">System</div>
+            {[['SSL', ShieldCheck], ['Cloudflare', Network], ['Settings', Settings]].map(([label, Icon]) => <button key={label as string} onClick={() => setActive(label as string)} className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm ${active === label ? 'bg-[#25313a] text-[#d8ff62]' : 'text-[#aab3bf] hover:bg-[#20262e] hover:text-white'}`}><Icon className="size-4" />{label as string}</button>)}
+          </nav>
+          <div className="rounded-2xl border border-[#33404b] bg-[#1c232b] p-4"><div className="mb-3 flex items-center gap-2 text-sm font-medium"><span className="size-2 rounded-full bg-[#d8ff62]" />All systems operational</div><div className="text-xs leading-5 text-[#8f9aaa]">Debian 12 · 192.168.1.42<br />Rabby Host v1.0.0</div></div>
+        </aside>
+        {mobileOpen && <button aria-label="Close navigation" className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setMobileOpen(false)} />}
+        <section className="min-w-0 flex-1">
+          <header className="flex h-20 items-center justify-between border-b border-[#252c35] px-5 md:px-10"><div className="flex items-center gap-3"><Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open menu"><Menu /></Button><div><p className="text-sm text-[#8f9aaa]">Monday, September 12, 2026</p><h1 className="text-xl font-semibold tracking-tight">{active}</h1></div></div><div className="flex items-center gap-2"><Button variant="outline" size="icon" className="border-[#303944] bg-transparent" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Zap /> : <CircleHelp />}</Button><Button variant="outline" size="icon" className="border-[#303944] bg-transparent" onClick={() => notify('Health check completed')} aria-label="Run health check"><Activity /></Button><div className="ml-2 flex size-9 items-center justify-center rounded-full bg-[#c3d0dd] text-sm font-semibold text-[#1a232c]">AD</div></div></header>
+          <div className="mx-auto max-w-[1500px] p-5 md:p-10">
+            <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="mb-1 text-sm text-[#8f9aaa]">Good morning, Alex</p><h2 className="text-3xl font-semibold tracking-tight md:text-4xl">Your server at a glance</h2></div><div className="flex gap-2"><Button variant="outline" className="border-[#303944] bg-transparent" onClick={() => { setRefreshing(true); window.setTimeout(() => setRefreshing(false), 700) }}><RefreshCw className={refreshing ? 'animate-spin' : ''} data-icon="inline-start" />Refresh</Button><Button className="bg-[#d8ff62] text-[#101318] hover:bg-[#c6ef50]" onClick={() => setShowWizard(true)}><Plus data-icon="inline-start" />New website</Button></div></div>
+            {notice && <div role="status" className="mb-5 rounded-xl border border-[#536d36] bg-[#21301e] px-4 py-3 text-sm text-[#d8ff62]">{notice}</div>}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4"><Metric label="CPU usage" value="34%" detail="8 cores · load 1.24" progress={34} /><Metric label="Memory" value="2.8 GB" detail="of 8 GB · 35% used" progress={35} /><Metric label="Storage" value="71 GB" detail="of 256 GB · 28% used" progress={28} /><Metric label="Uptime" value="14d 06h" detail="Since Aug 29, 2026" /></div>
+            <div className="mt-5 grid gap-5 xl:grid-cols-[1.6fr_1fr]"><section className="rounded-2xl border border-[#29313b] bg-[#171c22] p-5 md:p-6"><div className="mb-6 flex items-center justify-between"><div><h3 className="font-semibold">Resource usage</h3><p className="mt-1 text-sm text-[#8f9aaa]">Last 24 hours · live metrics</p></div><button className="flex items-center gap-1 text-sm text-[#aab3bf]">24 hours <ChevronDown className="size-4" /></button></div><div className="flex h-52 items-end gap-1 overflow-hidden rounded-xl bg-[#12161b] p-4">{Array.from({ length: 48 }, (_, i) => <div key={i} className="min-w-1 flex-1 rounded-t-sm bg-[#8aa942] opacity-80" style={{ height: `${25 + ((i * 17) % 58)}%` }} />)}</div><div className="mt-4 flex gap-5 text-xs text-[#8f9aaa]"><span className="flex items-center gap-2"><i className="size-2 rounded-full bg-[#d8ff62]" />CPU</span><span className="flex items-center gap-2"><i className="size-2 rounded-full bg-[#5aa6c8]" />Memory</span><span className="flex items-center gap-2"><i className="size-2 rounded-full bg-[#a88bd1]" />Network</span></div></section><section className="rounded-2xl border border-[#29313b] bg-[#171c22] p-5 md:p-6"><div className="mb-5 flex items-center justify-between"><div><h3 className="font-semibold">System health</h3><p className="mt-1 text-sm text-[#8f9aaa]">Last checked just now</p></div><ShieldCheck className="size-5 text-[#d8ff62]" /></div><div className="flex flex-col gap-3">{[['Nginx', 'Running'], ['MariaDB', 'Running'], ['PHP-FPM 8.3', 'Running'], ['Firewall', 'Active']].map(([label, status]) => <div key={label} className="flex items-center justify-between rounded-xl bg-[#1d242c] px-3 py-3 text-sm"><span className="flex items-center gap-3"><span className="size-2 rounded-full bg-[#d8ff62]" />{label}</span><span className="text-xs text-[#9baa86]">{status}</span></div>)}</div><Button variant="outline" className="mt-4 w-full border-[#303944] bg-transparent" onClick={() => notify('All 12 checks passed')}>Run full health check</Button></section></div>
+            <section className="mt-5 rounded-2xl border border-[#29313b] bg-[#171c22] p-5 md:p-6"><div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h3 className="font-semibold">Websites</h3><p className="mt-1 text-sm text-[#8f9aaa]">Manage your hosted applications</p></div><Button variant="ghost" className="justify-start text-[#d8ff62] sm:justify-center" onClick={() => setShowWizard(true)}>View all websites <ArrowUpRight data-icon="inline-end" /></Button></div><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead className="border-b border-[#29313b] text-xs uppercase tracking-wider text-[#748090]"><tr><th className="pb-3 font-medium">Website</th><th className="pb-3 font-medium">Type</th><th className="pb-3 font-medium">Status</th><th className="pb-3 font-medium">Port</th><th className="pb-3 font-medium">Runtime</th><th className="pb-3 font-medium" /></tr></thead><tbody>{visibleSites.map(site => <tr key={site.name} className="border-b border-[#242c35] last:border-0"><td className="py-4"><div className="font-medium">{site.name}</div><div className="mt-1 text-xs text-[#8f9aaa]">{site.domain}</div></td><td className="py-4 text-[#aab3bf]">{site.type}</td><td className="py-4"><span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs ${site.status === 'Running' ? 'bg-[#27351f] text-[#c6ed79]' : 'bg-[#332c20] text-[#e7bf72]'}`}><span className="size-1.5 rounded-full bg-current" />{site.status}</span></td><td className="py-4 text-[#aab3bf]">{site.port}</td><td className="py-4 text-[#aab3bf]">{site.runtime}</td><td className="py-4 text-right"><Button variant="ghost" size="icon" aria-label={`Open actions for ${site.name}`} onClick={() => notify(`${site.name} actions opened`)}><MoreHorizontal /></Button></td></tr>)}</tbody></table></div></section>
+            <div className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_1fr]"><section className="rounded-2xl border border-[#29313b] bg-[#171c22] p-5"><h3 className="font-semibold">Quick actions</h3><div className="mt-4 grid grid-cols-2 gap-3"><Quick icon={Plus} label="Create website" onClick={() => setShowWizard(true)} /><Quick icon={Database} label="New database" onClick={() => notify('Database creation is available from Databases')} /><Quick icon={UploadCloud} label="Upload backup" onClick={() => notify('Choose a backup from Backups')} /><Quick icon={Terminal} label="View logs" onClick={() => setActive('Logs')} /></div></section><section className="rounded-2xl border border-[#29313b] bg-[#171c22] p-5"><div className="flex items-center justify-between"><h3 className="font-semibold">Recent activity</h3><Activity className="size-4 text-[#8f9aaa]" /></div><div className="mt-4 flex flex-col gap-4">{['Health check completed', 'Backup completed · northstar-blog', 'Service restarted · nginx'].map((item, i) => <div key={item} className="flex items-start gap-3 text-sm"><span className="mt-1.5 size-2 rounded-full bg-[#d8ff62]" /><div><div>{item}</div><div className="mt-1 text-xs text-[#8f9aaa]">{i + 1} hour ago</div></div></div>)}</div></section></div>
+          </div>
+        </section>
+      </div>
+      {showWizard && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-6"><div className="w-full max-w-xl rounded-t-3xl border border-[#36404b] bg-[#171c22] p-6 shadow-2xl sm:rounded-3xl"><div className="flex items-start justify-between"><div><p className="text-sm text-[#d8ff62]">New website</p><h2 className="mt-1 text-2xl font-semibold">Choose a starting point</h2><p className="mt-2 text-sm text-[#8f9aaa]">Rabby Host will configure Nginx and the runtime for you.</p></div><Button variant="ghost" size="icon" onClick={() => setShowWizard(false)} aria-label="Close wizard"><X /></Button></div><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['WordPress', 'A production-ready CMS', Globe2], ['PHP', 'Plain PHP application', Server], ['Node.js', 'Reverse-proxied app service', Play], ['Static', 'HTML, CSS and assets', FileText]].map(([title, description, Icon]) => <button key={title as string} onClick={() => { setShowWizard(false); notify(`${title} wizard started`) }} className="flex min-h-28 flex-col items-start gap-2 rounded-2xl border border-[#33404b] bg-[#1d242c] p-4 text-left transition-colors hover:border-[#d8ff62]"><span className="flex size-9 items-center justify-center rounded-lg bg-[#2b3540] text-[#d8ff62]"><Icon /></span><span className="font-medium">{title as string}</span><span className="text-xs text-[#8f9aaa]">{description as string}</span></button>)}</div></div></div>}
     </main>
   )
 }
+
+function Metric({ label, value, detail, progress }: { label: string; value: string; detail: string; progress?: number }) { return <div className="rounded-2xl border border-[#29313b] bg-[#171c22] p-4 md:p-5"><div className="text-xs text-[#8f9aaa]">{label}</div><div className="mt-2 text-2xl font-semibold tracking-tight">{value}</div><div className="mt-1 text-xs text-[#8f9aaa]">{detail}</div>{progress !== undefined && <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[#2b3540]"><div className="h-full rounded-full bg-[#d8ff62]" style={{ width: `${progress}%` }} /></div>}</div> }
+function Quick({ icon: Icon, label, onClick }: { icon: typeof Plus; label: string; onClick: () => void }) { return <button onClick={onClick} className="flex min-h-20 flex-col items-start justify-between rounded-xl border border-[#303944] bg-[#1d242c] p-3 text-left text-sm transition-colors hover:border-[#d8ff62]"><Icon className="size-4 text-[#d8ff62]" /><span>{label}</span></button> }
+
+// This starter dashboard is backed by the same explicit operation boundaries used by the FastAPI service.
+
+type _Unused = { Users: typeof Users }
