@@ -10,6 +10,7 @@ from typing import Literal
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Query, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
@@ -23,7 +24,7 @@ WebsiteType = Literal["WordPress", "PHP", "Node.js", "Static"]
 repo = repository(DATA_ROOT)
 app = FastAPI(title="Rabby Host API", version=VERSION, docs_url="/api/docs", redoc_url="/api/redoc", openapi_url="/api/openapi.json")
 origins = [item.strip() for item in os.getenv("RABBY_HOST_CORS_ORIGINS", "http://localhost:3000,http://localhost:8787").split(",") if item.strip()]
-app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["GET", "POST", "DELETE"], allow_headers=["Content-Type", "X-CSRF-Token"])
+app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["Content-Type", "X-CSRF-Token"])
 
 class WebsiteCreate(BaseModel):
     name: str = Field(min_length=2, max_length=48, pattern=r"^[a-z0-9][a-z0-9-]*$")
@@ -51,6 +52,22 @@ class WebsiteCreate(BaseModel):
 
 class StatusChange(BaseModel):
     status: Literal["Running", "Stopped"]
+
+class WebsiteUpdate(BaseModel):
+    domain: str | None = Field(default=None, min_length=3, max_length=253)
+    runtime: str | None = Field(default=None, max_length=32)
+    port: int | None = Field(default=None, ge=1, le=65535)
+    ssl: bool | None = None
+
+    @field_validator("domain")
+    @classmethod
+    def valid_domain_update(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        labels = value.strip().lower().split(".")
+        if not all(label and len(label) <= 63 and label[0].isalnum() and label[-1].isalnum() and all(char.isalnum() or char == "-" for char in label) for label in labels):
+            raise ValueError("Enter a valid hostname")
+        return ".".join(labels)
 
 class ServiceAction(BaseModel):
     action: Literal["start", "stop", "restart", "reload"]
@@ -124,6 +141,18 @@ def get_website(website_id: str) -> dict[str, object]:
     if not item:
         raise HTTPException(status_code=404, detail="Website not found")
     return item
+
+@app.patch("/api/v1/websites/{website_id}", tags=["websites"])
+def update_website(website_id: str, payload: WebsiteUpdate, request: Request) -> dict[str, object]:
+    current = repo.website(website_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="Website not found")
+    changes = payload.model_dump(exclude_none=True)
+    if "domain" in changes and any(item["id"] != website_id and item["domain"] == changes["domain"] for item in repo.websites()):
+        raise HTTPException(status_code=409, detail="Domain already exists")
+    item = repo.update_website(website_id, changes)
+    repo.audit("website.update", website_id, "success", now(), client_ip(request))
+    return item or {}
 
 @app.post("/api/v1/websites/{website_id}/status", tags=["websites"])
 def set_website_status(website_id: str, payload: StatusChange, request: Request) -> dict[str, object]:
