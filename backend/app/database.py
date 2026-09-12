@@ -2,31 +2,36 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 SCHEMA = """
+PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS websites (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
   domain TEXT NOT NULL UNIQUE,
   type TEXT NOT NULL CHECK(type IN ('WordPress','PHP','Node.js','Static')),
-  status TEXT NOT NULL DEFAULT 'Stopped',
+  status TEXT NOT NULL DEFAULT 'Stopped' CHECK(status IN ('Running','Stopped','Installing','Error')),
   runtime TEXT NOT NULL,
-  port INTEGER NOT NULL,
+  port INTEGER NOT NULL CHECK(port BETWEEN 1 AND 65535),
   ssl INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   config_json TEXT NOT NULL DEFAULT '{}'
 );
+CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY, type TEXT NOT NULL, status TEXT NOT NULL,
+  progress INTEGER NOT NULL DEFAULT 0, message TEXT NOT NULL,
+  created_at TEXT NOT NULL, started_at TEXT, completed_at TEXT, error TEXT
+);
 CREATE TABLE IF NOT EXISTS audit_logs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  action TEXT NOT NULL,
-  target TEXT NOT NULL,
-  result TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, target TEXT NOT NULL,
+  result TEXT NOT NULL, created_at TEXT NOT NULL, ip TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_websites_created_at ON websites(created_at);
 CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
 """
 
 class Repository:
@@ -35,11 +40,16 @@ class Repository:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.initialize()
 
-    def connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self.path, timeout=10)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
-        return connection
+        try:
+            yield connection
+            connection.commit()
+        finally:
+            connection.close()
 
     def initialize(self) -> None:
         with self.connect() as connection:
@@ -73,14 +83,24 @@ class Repository:
             result = connection.execute("DELETE FROM websites WHERE id = ?", (website_id,))
         return result.rowcount == 1
 
-    def audit(self, action: str, target: str, result: str, created_at: str) -> None:
+    def audit(self, action: str, target: str, result: str, created_at: str, ip: str | None = None) -> None:
         with self.connect() as connection:
-            connection.execute("INSERT INTO audit_logs (action,target,result,created_at) VALUES (?,?,?,?)", (action, target, result, created_at))
+            connection.execute("INSERT INTO audit_logs (action,target,result,created_at,ip) VALUES (?,?,?,?,?)", (action, target, result, created_at, ip))
 
     def activities(self, limit: int = 20) -> list[dict[str, Any]]:
         with self.connect() as connection:
-            rows = connection.execute("SELECT action,target,result,created_at FROM audit_logs ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+            rows = connection.execute("SELECT action,target,result,created_at,ip FROM audit_logs ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
         return [dict(row) for row in rows]
+
+    def create_task(self, values: dict[str, Any]) -> dict[str, Any]:
+        with self.connect() as connection:
+            connection.execute("INSERT INTO tasks (id,type,status,progress,message,created_at) VALUES (?,?,?,?,?,?)", tuple(values[key] for key in ("id", "type", "status", "progress", "message", "created_at")))
+        return self.task(values["id"])  # type: ignore[return-value]
+
+    def task(self, task_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        return dict(row) if row else None
 
     @staticmethod
     def _website(row: sqlite3.Row) -> dict[str, Any]:
