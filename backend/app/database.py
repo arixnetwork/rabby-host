@@ -78,7 +78,19 @@ class Repository:
             connection.execute("UPDATE websites SET status = ? WHERE id = ?", (status, website_id))
         return self.website(website_id)
 
+    def update_website(self, website_id: str, changes: dict[str, Any]) -> dict[str, Any] | None:
+        allowed = {key: value for key, value in changes.items() if key in {"domain", "runtime", "port", "ssl"}}
+        if not allowed:
+            return self.website(website_id)
+        assignments = ", ".join(f"{key} = ?" for key in allowed)
+        values = [int(value) if key == "ssl" else value for key, value in allowed.items()]
+        values.append(website_id)
+        with self.connect() as connection:
+            connection.execute(f"UPDATE websites SET {assignments} WHERE id = ?", values)
+        return self.website(website_id)
+
     def delete_website(self, website_id: str) -> bool:
+
         with self.connect() as connection:
             result = connection.execute("DELETE FROM websites WHERE id = ?", (website_id,))
         return result.rowcount == 1
