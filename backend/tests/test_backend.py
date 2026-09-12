@@ -1,28 +1,35 @@
 import os
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
+# Must set env vars before backend imports
+_tmp_data = tempfile.mkdtemp()
+_tmp_log = tempfile.mkdtemp()
+_tmp_sites = tempfile.mkdtemp()
+
+os.environ["RABBY_HOST_DATA_DIR"] = _tmp_data
+os.environ["RABBY_HOST_LOG_DIR"] = _tmp_log
+os.environ["RABBY_HOST_SITES_DIR"] = _tmp_sites
+
 import pytest
 from fastapi.testclient import TestClient
 
-os.environ["RABBY_HOST_DATA_DIR"] = tempfile.mkdtemp()
-os.environ["RABBY_HOST_LOG_DIR"] = tempfile.mkdtemp()
-os.environ["RABBY_HOST_SITES_DIR"] = tempfile.mkdtemp()
-
-from backend.app.main import app, repo
-from backend.app.nginx import NginxManager
+from backend.app.main import app
+from backend.app.security import hash_password, verify_password
+from backend.app.mariadb import MariaDBManager
 from backend.app.files import FileManager
 from backend.app.backups import BackupEngine
-from backend.app.security import hash_password, verify_password, generate_token
-from backend.app.mariadb import MariaDBManager
 from backend.app.wordpress import WordPressManager
 
 client = TestClient(app)
+
 
 def test_health_check():
     res = client.get("/api/v1/health")
     assert res.status_code == 200
     assert res.json()["status"] == "ok"
     assert res.json()["service"] == "rabby-host"
+
 
 def test_system_info():
     res = client.get("/api/v1/system")
@@ -32,11 +39,13 @@ def test_system_info():
     assert "memory" in body
     assert "disk" in body
 
+
 def test_password_hashing():
     pwd = "SecretPassword123!"
     hashed = hash_password(pwd)
     assert verify_password(pwd, hashed) is True
     assert verify_password("WrongPassword", hashed) is False
+
 
 def test_website_lifecycle():
     create_payload = {
@@ -65,8 +74,9 @@ def test_website_lifecycle():
     assert del_res.status_code == 200
     assert del_res.json()["deleted"] is True
 
+
 def test_file_manager_sandboxing():
-    sites_root = Path(os.environ["RABBY_HOST_SITES_DIR"])
+    sites_root = Path(_tmp_sites)
     fm = FileManager(sites_root)
 
     write_res = fm.write_file("site-a/index.html", "<h1>Hello</h1>")
@@ -76,9 +86,10 @@ def test_file_manager_sandboxing():
     with pytest.raises(PermissionError):
         fm.resolve_path("../../etc/passwd")
 
+
 def test_backup_and_restore():
-    data_root = Path(os.environ["RABBY_HOST_DATA_DIR"])
-    sites_root = Path(os.environ["RABBY_HOST_SITES_DIR"])
+    data_root = Path(_tmp_data)
+    sites_root = Path(_tmp_sites)
     be = BackupEngine(data_root / "backups", sites_root)
 
     domain = "backup-test.local"
@@ -92,13 +103,16 @@ def test_backup_and_restore():
     with pytest.raises(PermissionError):
         be.restore_website_backup("../../etc/shadow", domain)
 
+
 def test_wordpress_installer_generation():
-    wp = WordPressManager(Path(os.environ["RABBY_HOST_SITES_DIR"]))
+    sites_root = Path(_tmp_sites)
+    wp = WordPressManager(sites_root)
     res = wp.install_wordpress("wptest.local")
     assert res["status"] == "installed"
-    wp_config = Path(os.environ["RABBY_HOST_SITES_DIR"]) / "wptest.local" / "wp-config.php"
+    wp_config = sites_root / "wptest.local" / "wp-config.php"
     assert wp_config.exists()
     assert "DB_NAME" in wp_config.read_text()
+
 
 def test_mariadb_sanitization():
     db = MariaDBManager()
