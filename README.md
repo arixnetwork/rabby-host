@@ -1,6 +1,6 @@
 # Rabby Host
 
-Rabby Host is a lightweight Debian control panel for personal hosting. The repository contains a Next.js preview dashboard and a Debian-native FastAPI service foundation. The UI is intentionally explicit about the operations it presents; privileged production operations belong in the backend service layer and never in an arbitrary shell endpoint.
+Rabby Host is a lightweight Debian control panel for personal hosting. The repository contains a Next.js preview dashboard and a Debian-native FastAPI service foundation. The UI is intentionally designed as a local management dashboard for a single Debian host.
 
 ## Development
 
@@ -16,7 +16,15 @@ Backend development:
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r backend/requirements.txt
+export RABBY_HOST_ADMIN_TOKEN="change-me"
 uvicorn backend.app.main:app --reload --port 8787
+```
+
+For the admin dashboard and API calls, set the same token in the browser environment and on the API server:
+
+```bash
+export RABBY_HOST_ADMIN_TOKEN="replace-with-a-long-random-secret"
+export NEXT_PUBLIC_RABBY_HOST_API_TOKEN="replace-with-the-same-secret"
 ```
 
 ## Debian installation
@@ -48,11 +56,11 @@ sudo bash installer/install.sh
 systemctl status rabby-host
 ```
 
-The installer installs Debian-native Nginx, MariaDB, PHP-FPM, Node.js, Python, creates the restricted `rabby-host` service user, and enables `rabby-host.service` on boot. The current panel foundation exposes health, system, services, websites, and bounded log API routes; website provisioning modules are being added behind explicit service boundaries.
+The installer installs Debian-native Nginx, MariaDB, PHP-FPM, Node.js, Python, creates the restricted `rabby-host` service user, and enables `rabby-host.service` on boot. The current panel foundation expects the control interface to run behind a trusted local network boundary and to use a configured admin token.
 
 ## Security
 
-Do not expose the panel directly to the public internet without HTTPS and firewall review. Keep `/var/lib/rabby-host`, service credentials, and generated Nginx configuration owned by root or the service account as appropriate. The application does not provide an arbitrary command execution endpoint.
+Do not expose the panel directly to the public internet without HTTPS and firewall review. Keep `/var/lib/rabby-host`, service credentials, and generated Nginx configuration owned by root or the service account, and set `RABBY_HOST_ADMIN_TOKEN` before the control panel is used in a shared environment.
 
 ## License
 
