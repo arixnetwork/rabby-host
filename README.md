@@ -21,7 +21,27 @@ uvicorn backend.app.main:app --reload --port 8787
 
 ## Debian installation
 
-Supported: Debian 12 Bookworm and Debian 13 Trixie on amd64 or arm64.
+Supported: Debian 12 Bookworm and Debian 13 Trixie on amd64 or arm64. The remote bootstrap validates the OS and architecture, clones the selected repository ref into a temporary directory, and runs the versioned installer. It does not execute arbitrary downloaded commands outside the repository installer.
+
+Recommended installation from GitHub:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/arixnetwork/rabby-host/main/install.sh | sudo bash
+```
+
+Install a specific branch or release ref:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/arixnetwork/rabby-host/main/install.sh | sudo RABBY_HOST_VERSION=v1.0.0 bash
+```
+
+Install from a fork or mirror:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/arixnetwork/rabby-host/main/install.sh | sudo RABBY_HOST_REPO_URL=https://github.com/OWNER/REPO.git bash
+```
+
+For a checked-out source tree:
 
 ```bash
 sudo bash installer/install.sh
