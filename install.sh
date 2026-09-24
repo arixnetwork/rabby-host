@@ -32,9 +32,17 @@ command -v git >/dev/null 2>&1 || {
   apt-get install -y --no-install-recommends git ca-certificates
 }
 
-rm -rf "$WORK_DIR"
-mkdir -p "$WORK_DIR"
+if [[ "$WORK_DIR" == "/" || "$WORK_DIR" == "/tmp" || -z "$WORK_DIR" ]]; then
+  echo "Refusing unsafe installation directory: $WORK_DIR" >&2
+  exit 1
+fi
+
+rm -rf -- "$WORK_DIR"
+install -d -m 0755 -- "$WORK_DIR"
+cleanup() { rm -rf -- "$WORK_DIR"; }
+trap cleanup EXIT
+
 echo "Downloading Rabby Host (${REPO_REF})..."
-git clone --depth 1 --branch "$REPO_REF" "$REPO_URL" "$WORK_DIR/source"
+git clone --depth 1 --single-branch --branch "$REPO_REF" "$REPO_URL" "$WORK_DIR/source"
 
 exec bash "$WORK_DIR/source/installer/install.sh"
