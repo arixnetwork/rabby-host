@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+
 if [[ $EUID -ne 0 ]]; then echo 'Run as root: sudo bash installer/install.sh'; exit 1; fi
 if [[ ! -r /etc/os-release ]]; then echo 'Unsupported system: /etc/os-release missing'; exit 1; fi
 . /etc/os-release
@@ -13,9 +16,9 @@ install -d -o root -g root -m 0755 /opt/rabby-host /var/lib/rabby-host /var/log/
 if id rabby-host >/dev/null 2>&1; then :; else useradd --system --home /var/lib/rabby-host --shell /usr/sbin/nologin --user-group rabby-host; fi
 python3 -m venv /opt/rabby-host/venv
 /opt/rabby-host/venv/bin/pip install --upgrade pip
-/opt/rabby-host/venv/bin/pip install --requirement backend/requirements.txt
+/opt/rabby-host/venv/bin/pip install --requirement "$PROJECT_DIR/backend/requirements.txt"
 rm -rf /opt/rabby-host/app
-cp -r backend/app /opt/rabby-host/app
+cp -r "$PROJECT_DIR/backend/app" /opt/rabby-host/app
 chown -R root:rabby-host /opt/rabby-host /var/lib/rabby-host /var/log/rabby-host
 chmod 0750 /var/lib/rabby-host /var/log/rabby-host
 cp systemd/rabby-host.service /etc/systemd/system/rabby-host.service
