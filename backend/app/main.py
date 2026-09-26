@@ -32,7 +32,7 @@ def require_admin(
 ) -> None:
     expected = os.getenv("RABBY_HOST_ADMIN_TOKEN") or os.getenv("RABBY_HOST_API_TOKEN")
     if not expected:
-        return
+        raise HTTPException(status_code=503, detail="Authentication is not configured")
 
     token = None
     if authorization and authorization.lower().startswith("bearer "):

@@ -8,6 +8,7 @@ Type=simple
 User=rabby-host
 Group=rabby-host
 WorkingDirectory=/opt/rabby-host
+EnvironmentFile=-/etc/rabby-host/rabby-host.env
 ExecStart=/opt/rabby-host/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8787
 Restart=on-failure
 RestartSec=3

@@ -14,8 +14,22 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends python3 python3-venv python3-pip nginx mariadb-server nodejs npm sqlite3 curl ca-certificates
 
-install -d -o root -g root -m 0755 /opt/rabby-host /var/lib/rabby-host /var/log/rabby-host /var/www/rabby-host/sites
+install -d -o root -g root -m 0755 /opt/rabby-host /etc/rabby-host /var/lib/rabby-host /var/log/rabby-host /var/www/rabby-host/sites
 if id rabby-host >/dev/null 2>&1; then :; else useradd --system --home /var/lib/rabby-host --shell /usr/sbin/nologin --user-group rabby-host; fi
+
+ENV_FILE=/etc/rabby-host/rabby-host.env
+if [[ ! -s "$ENV_FILE" ]] || ! grep -q '^RABBY_HOST_ADMIN_TOKEN=' "$ENV_FILE"; then
+  umask 077
+  TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+  cat > "$ENV_FILE" <<EOF
+RABBY_HOST_ADMIN_TOKEN=$TOKEN
+RABBY_HOST_DATA_DIR=/var/lib/rabby-host
+RABBY_HOST_LOG_DIR=/var/log/rabby-host
+ENVIRONMENT=debian
+EOF
+  chmod 0600 "$ENV_FILE"
+  chown root:rabby-host "$ENV_FILE"
+fi
 
 python3 -m venv /opt/rabby-host/venv
 /opt/rabby-host/venv/bin/pip install --upgrade pip
